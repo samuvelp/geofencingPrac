@@ -1,60 +1,76 @@
 package com.pandian.samuvel.geofencingprac;
 
 import android.app.IntentService;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.app.TaskStackBuilder;
 import android.content.Intent;
+import android.graphics.Color;
+import android.support.v4.app.NotificationCompat;
+import android.text.TextUtils;
+
+import com.google.android.gms.location.Geofence;
+import com.google.android.gms.location.GeofencingEvent;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
-/**
- * An {@link IntentService} subclass for handling asynchronous task requests in
- * a service on a separate handler thread.
- * <p>
- * TODO: Customize class - update intent actions and extra parameters.
- */
 public class GeofenceTransitionService extends IntentService {
-    // TODO: Rename actions, choose action names that describe tasks that this
-    // IntentService can perform, e.g. ACTION_FETCH_NEW_ITEMS
-    public static final String ACTION_FOO = "com.pandian.samuvel.geofencingprac.action.FOO";
-    public static final String ACTION_BAZ = "com.pandian.samuvel.geofencingprac.action.BAZ";
 
-    // TODO: Rename parameters
-    public static final String EXTRA_PARAM1 = "com.pandian.samuvel.geofencingprac.extra.PARAM1";
-    public static final String EXTRA_PARAM2 = "com.pandian.samuvel.geofencingprac.extra.PARAM2";
-
+    private int mGeofenceTransition;
+    private static final int GEOFENCE_NOTIFICATION_ID = 0;
     public GeofenceTransitionService() {
         super("GeofenceTransitionService");
     }
 
     @Override
     protected void onHandleIntent(Intent intent) {
-        if (intent != null) {
-            final String action = intent.getAction();
-            if (ACTION_FOO.equals(action)) {
-                final String param1 = intent.getStringExtra(EXTRA_PARAM1);
-                final String param2 = intent.getStringExtra(EXTRA_PARAM2);
-                handleActionFoo(param1, param2);
-            } else if (ACTION_BAZ.equals(action)) {
-                final String param1 = intent.getStringExtra(EXTRA_PARAM1);
-                final String param2 = intent.getStringExtra(EXTRA_PARAM2);
-                handleActionBaz(param1, param2);
-            }
+        GeofencingEvent mGeofencingEvent = GeofencingEvent.fromIntent(intent);
+        mGeofenceTransition = mGeofencingEvent.getGeofenceTransition();
+        if((mGeofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) || (mGeofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT)){
+            List<Geofence> triggeringGeofences = mGeofencingEvent.getTriggeringGeofences();
+            String geofenceTransitionDetails = getGeofenceTransitionDetails(mGeofenceTransition,triggeringGeofences);
+            sendNotification(geofenceTransitionDetails);
         }
     }
 
-    /**
-     * Handle action Foo in the provided background thread with the provided
-     * parameters.
-     */
-    private void handleActionFoo(String param1, String param2) {
-        // TODO: Handle action Foo
-        throw new UnsupportedOperationException("Not yet implemented");
+    private String getGeofenceTransitionDetails(int geofenceTransition,List<Geofence> trigerringGeofences){
+        ArrayList<String> mTriggeringGeofenceList = new ArrayList<>();
+        for(Geofence geofence : trigerringGeofences){
+            mTriggeringGeofenceList.add(geofence.getRequestId());
+        }
+        String status = null;
+        if(geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER)
+            status = "Check In,You have entered";
+        else if(geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT)
+            status = "Check Out, You have exited";
+        return status + TextUtils.join(" ",mTriggeringGeofenceList);
     }
 
-    /**
-     * Handle action Baz in the provided background thread with the provided
-     * parameters.
-     */
-    private void handleActionBaz(String param1, String param2) {
-        // TODO: Handle action Baz
-        throw new UnsupportedOperationException("Not yet implemented");
+    private void sendNotification(String message){
+        Intent notificationIntent = MainActivity.makeNotificationIntent(getApplicationContext(),message);
+        TaskStackBuilder taskStackBuilder = TaskStackBuilder.create(getApplicationContext());
+        taskStackBuilder.addParentStack(MainActivity.class);
+        taskStackBuilder.addNextIntent(notificationIntent);
+        PendingIntent notificationPendindIntent = taskStackBuilder.getPendingIntent(0,PendingIntent.FLAG_UPDATE_CURRENT);
+
+        NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        notificationManager.notify(GEOFENCE_NOTIFICATION_ID, createNotification(message,notificationPendindIntent));
+
+    }
+    private Notification createNotification(String message, PendingIntent notificationPendingIntent){
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(getApplicationContext(),"channelID");
+        notificationBuilder
+                .setSmallIcon(R.drawable.know)
+                .setColor(Color.RED)
+                .setContentTitle(message)
+                .setContentText("Know notification!")
+                .setContentIntent(notificationPendingIntent)
+                .setDefaults(Notification.DEFAULT_LIGHTS | Notification.DEFAULT_VIBRATE | Notification.DEFAULT_SOUND)
+                .setAutoCancel(true);
+        return notificationBuilder.build();
+
     }
 }
