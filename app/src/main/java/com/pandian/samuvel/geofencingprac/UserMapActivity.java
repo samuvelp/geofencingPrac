@@ -42,6 +42,12 @@ import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 public class UserMapActivity extends AppCompatActivity implements OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,
@@ -56,6 +62,10 @@ public class UserMapActivity extends AppCompatActivity implements OnMapReadyCall
     private Marker mGeoFenceMarker;
     private Circle mGeofenceLimits;
     private PendingIntent mGeofencePendingIntent;
+    private FirebaseDatabase mFirebaseDatabase;
+    private DatabaseReference mDatabaseReference;
+    private ChildEventListener mChildEventListener;
+    private LatLng mLatLng;
     private final static int GEOFENCE_REQ_CODE = 0;
     private final String KEY_GEOFENCE_LAT = "GEOFENCE LATITUDE";
     private final String KEY_GEOFENCE_LON = "GEOFENCE LONGITUDE";
@@ -73,6 +83,10 @@ public class UserMapActivity extends AppCompatActivity implements OnMapReadyCall
         mMapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.userMapMap);
         mMapFragment.getMapAsync(this);
 
+        mFirebaseDatabase = FirebaseDatabase.getInstance();
+        mDatabaseReference = mFirebaseDatabase.getReference().child("geofence");
+
+
         createGoogleApi();
         checkGpsIsEnabled();
 
@@ -83,8 +97,9 @@ public class UserMapActivity extends AppCompatActivity implements OnMapReadyCall
     public void onConnected(@Nullable Bundle bundle) {
         Log.d("onConnected","connected");
         getLastKnowLocation();
-        recoverGeofenceMarker();
-        startGeofence();//starting geofence
+        //recoverGeofenceMarker();
+        attachValueEventListener();
+        //startGeofence();//starting geofence
     }
 
     @Override
@@ -169,7 +184,7 @@ public class UserMapActivity extends AppCompatActivity implements OnMapReadyCall
         }
     }
 
-    private void recoverGeofenceMarker() {
+   /* private void recoverGeofenceMarker() {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         if (sharedPreferences.contains( KEY_GEOFENCE_LAT ) && sharedPreferences.contains( KEY_GEOFENCE_LON )) {
             double lat = Double.longBitsToDouble( sharedPreferences.getLong( KEY_GEOFENCE_LAT, -1 ));
@@ -180,8 +195,72 @@ public class UserMapActivity extends AppCompatActivity implements OnMapReadyCall
             setmGeoFenceMarker(latLng);
             drawGeoFence();
         }
+    }*/
+    private void recoverGeofenceMarker() {
+        //attachChildListener();
+        attachValueEventListener();
     }
 
+    private void attachChildListener(){
+        if(mChildEventListener == null) {
+            mChildEventListener = new ChildEventListener() {
+                @Override
+                public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                    GeoFenceModel geoFenceModel = dataSnapshot.getValue(GeoFenceModel.class);
+                    double latitude = geoFenceModel.getmLatitude();
+                    double longitude = geoFenceModel.getmLongitude();
+                    float radius = geoFenceModel.getmRadius();
+                    mRadius = radius;
+                    mLatLng = new LatLng(latitude, longitude);
+                    setmGeoFenceMarker(mLatLng);
+                    drawGeoFence();
+                }
+
+                @Override
+                public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+
+                }
+
+                @Override
+                public void onChildRemoved(DataSnapshot dataSnapshot) {
+
+                }
+
+                @Override
+                public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+
+                }
+            };
+            mDatabaseReference.addChildEventListener(mChildEventListener);
+        }
+    }
+    private void attachValueEventListener(){
+        ValueEventListener valueEventListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                GeoFenceModel geoFenceModel = dataSnapshot.getValue(GeoFenceModel.class);
+                double latitude = geoFenceModel.getmLatitude();
+                double longitude = geoFenceModel.getmLongitude();
+                float radius = geoFenceModel.getmRadius();
+                mRadius = radius;
+                mLatLng = new LatLng(latitude,longitude);
+                setmGeoFenceMarker(mLatLng);
+                drawGeoFence();
+                startGeofence();
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        };
+        mDatabaseReference.addValueEventListener(valueEventListener);
+    }
     private void drawGeoFence(){
         if ( mGeofenceLimits != null )
             mGeofenceLimits.remove();
@@ -212,8 +291,8 @@ public class UserMapActivity extends AppCompatActivity implements OnMapReadyCall
     }
 
     private void startGeofence() {
-        if (mGeoFenceMarker != null) {
-            Geofence geofence = createGeofence(mGeoFenceMarker.getPosition(), mRadius);
+        if (mLatLng != null) {
+            Geofence geofence = createGeofence(mLatLng, mRadius);
             GeofencingRequest geofencingRequest = createGeofenceRequest(geofence);
             addGeofence(geofencingRequest);
         }

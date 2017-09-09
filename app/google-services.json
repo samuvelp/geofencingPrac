@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "907742698850",
+    "firebase_url": "https://geofencingprac-1504691837985.firebaseio.com",
+    "project_id": "geofencingprac-1504691837985",
+    "storage_bucket": "geofencingprac-1504691837985.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:907742698850:android:80731f17c9f575bd",
+        "android_client_info": {
+          "package_name": "com.pandian.samuvel.geofencingprac"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "907742698850-0o0a2l7tqh2vr3aju78ovsks8fpe629o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.pandian.samuvel.geofencingprac",
+            "certificate_hash": "77416a667da4b2303e16f1867a9cca159068cada"
+          }
+        },
+        {
+          "client_id": "907742698850-k98o0e479vee792kjrvsr0jm5p4so9tt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbA2Q_i6KKb-lWu4zcKgYbRTktkYr5V1Q"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "907742698850-k98o0e479vee792kjrvsr0jm5p4so9tt.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

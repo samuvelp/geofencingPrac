@@ -44,6 +44,12 @@ import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 public class GeoFenceActivity extends AppCompatActivity implements OnMapReadyCallback,
         GoogleMap.OnMapClickListener,
@@ -61,11 +67,14 @@ public class GeoFenceActivity extends AppCompatActivity implements OnMapReadyCal
     private Marker mGeoFenceMarker;
     private PendingIntent mGeofencePendingIntent;
     private Circle mGeofenceLimits;
+    private FirebaseDatabase mFirebaseDatabase;
+    private DatabaseReference mDatabaseReference;
+    private ChildEventListener mChildEventListener;
+    private float mGeoFenceRadius = 500.0f;
     private final static int GEOFENCE_REQ_CODE = 0;
     private final static int UPDATE_INTERVAL = 3 * 60 * 1000;
     private final static int FASTEST_INTERVAL = 30 * 1000;
     private final static String GEOFENCE_REQ_ID = "Know geofence";
-    private final static float GEOFENCE_RADIUS = 500.0f;
     private final String KEY_GEOFENCE_LAT = "GEOFENCE LATITUDE";
     private final String KEY_GEOFENCE_LON = "GEOFENCE LONGITUDE";
     private final String KEY_GEOFENCE_RADIUS = "GEOFENCE_RADIUS";
@@ -81,6 +90,9 @@ public class GeoFenceActivity extends AppCompatActivity implements OnMapReadyCal
         mAddgeofenceButton = (Button) findViewById(R.id.addGeofence);
         mClearGeofenceButton = (Button) findViewById(R.id.clearGeofenceButton);
 
+        mFirebaseDatabase = FirebaseDatabase.getInstance();
+        mDatabaseReference = mFirebaseDatabase.getReference().child("geofence");
+
 
         createGoogleApi();
         checkGpsIsEnabled();
@@ -91,6 +103,7 @@ public class GeoFenceActivity extends AppCompatActivity implements OnMapReadyCal
                 if(mGeoFenceMarker !=null) {
                     //startGeofence();
                     drawGeoFence();
+                    saveGeofence();
                 }
                 else Toast.makeText(getApplicationContext(),"Please select the geofencing location on map!",Toast.LENGTH_SHORT).show();
             }
@@ -98,13 +111,19 @@ public class GeoFenceActivity extends AppCompatActivity implements OnMapReadyCal
         mClearGeofenceButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                mGeoFenceMarker.remove();
-                mGeoFenceMarker =null;
-                removeGeofenceDraw();
+                if(mGeoFenceMarker!=null) {
+                   // mGeoFenceMarker.remove();
+                   // mGeoFenceMarker = null;
+                    removeGeofenceDraw();
+                }
             }
         });
-    }
 
+    }
+    private void writeGeofence(LatLng latLng,float radius){
+        GeoFenceModel geoFenceModel = new GeoFenceModel(latLng.latitude,latLng.longitude,radius);
+        mDatabaseReference.setValue(geoFenceModel);
+    }
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mGoogleMap = googleMap;
@@ -158,7 +177,7 @@ public class GeoFenceActivity extends AppCompatActivity implements OnMapReadyCal
     @Override
     protected void onStop() {
         super.onStop();
-        //mGoogleApiClient.disconnect();
+        mGoogleApiClient.disconnect();
     }
 
     private void getLastKnowLocation() {
@@ -225,7 +244,7 @@ public class GeoFenceActivity extends AppCompatActivity implements OnMapReadyCal
                     .center(mGeoFenceMarker.getPosition())
                     .strokeColor(Color.argb(50, 70, 70, 70))
                     .fillColor(Color.argb(100, 150, 150, 150))
-                    .radius(GEOFENCE_RADIUS);
+                    .radius(mGeoFenceRadius);
             mGeofenceLimits = mGoogleMap.addCircle(circleOptions);
 
     }
@@ -277,17 +296,23 @@ public class GeoFenceActivity extends AppCompatActivity implements OnMapReadyCal
             Toast.makeText(getApplicationContext(),"Geofence added!",Toast.LENGTH_SHORT).show();
         }
     }*/
-    private void saveGeofence() {
+    /*private void saveGeofence() {
         //SharedPreferences sharedPreferences = getPreferences( Context.MODE_PRIVATE );
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+       /* SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         SharedPreferences.Editor editor = sharedPreferences.edit();
 
         editor.putLong(KEY_GEOFENCE_LAT, Double.doubleToRawLongBits(mGeoFenceMarker.getPosition().latitude));
         editor.putLong(KEY_GEOFENCE_LON, Double.doubleToRawLongBits(mGeoFenceMarker.getPosition().longitude));
-        editor.putFloat(KEY_GEOFENCE_RADIUS, GEOFENCE_RADIUS);
+        editor.putFloat(KEY_GEOFENCE_RADIUS, mGeoFenceRadius);
         editor.apply();
+
+    }*/
+     private void saveGeofence() {
+
+        writeGeofence(mGeoFenceMarker.getPosition(),mGeoFenceRadius);
     }
-    private void recoverGeofenceMarker() {
+
+    /*private void recoverGeofenceMarker() {
        // SharedPreferences sharedPref = getPreferences( Context.MODE_PRIVATE );
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         if (sharedPreferences.contains( KEY_GEOFENCE_LAT ) && sharedPreferences.contains( KEY_GEOFENCE_LON )) {
@@ -298,14 +323,80 @@ public class GeoFenceActivity extends AppCompatActivity implements OnMapReadyCal
             drawGeoFence();
 
         }
+    }*/
+    private void recoverGeofenceMarker() {
+       //attachChildListener();
+        attachValueEventListener();
+    }
+
+    private void attachChildListener(){
+        if(mChildEventListener ==null){
+            mChildEventListener = new ChildEventListener() {
+                @Override
+                public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                    GeoFenceModel geoFenceModel = dataSnapshot.getValue(GeoFenceModel.class);
+                    double latitude = geoFenceModel.getmLatitude();
+                    double longitude = geoFenceModel.getmLongitude();
+                    float radius = geoFenceModel.getmRadius();
+                    mGeoFenceRadius = radius;
+                    LatLng latLng = new LatLng(latitude,longitude);
+                    setmGeoFenceMarker(latLng);
+                    drawGeoFence();
+                }
+
+                @Override
+                public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+
+                }
+
+                @Override
+                public void onChildRemoved(DataSnapshot dataSnapshot) {
+
+                }
+
+                @Override
+                public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+
+                }
+            };
+            mDatabaseReference.addChildEventListener(mChildEventListener);
+        }
+    }
+    private void attachValueEventListener(){
+        ValueEventListener valueEventListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                GeoFenceModel geoFenceModel = dataSnapshot.getValue(GeoFenceModel.class);
+                double latitude = geoFenceModel.getmLatitude();
+                double longitude = geoFenceModel.getmLongitude();
+                float radius = geoFenceModel.getmRadius();
+                mGeoFenceRadius = radius;
+                LatLng latLng = new LatLng(latitude,longitude);
+                setmGeoFenceMarker(latLng);
+                drawGeoFence();
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        };
+        mDatabaseReference.addValueEventListener(valueEventListener);
     }
     private void removeGeofenceDraw() {
         if ( mGeoFenceMarker != null) {
             mGeoFenceMarker.remove();
-            SharedPreferences sharedPreferences = getPreferences(Context.MODE_PRIVATE);
+            mGeoFenceMarker =null;
+            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
             SharedPreferences.Editor editor = sharedPreferences.edit();
             editor.clear();
             editor.apply();
+
         }
         if ( mGeofenceLimits != null )
             mGeofenceLimits.remove();
