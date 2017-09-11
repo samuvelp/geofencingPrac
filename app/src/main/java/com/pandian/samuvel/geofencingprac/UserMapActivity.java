@@ -240,18 +240,21 @@ public class UserMapActivity extends AppCompatActivity implements OnMapReadyCall
         }
     }
     private void attachValueEventListener(){
+
         ValueEventListener valueEventListener = new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 GeoFenceModel geoFenceModel = dataSnapshot.getValue(GeoFenceModel.class);
-                double latitude = geoFenceModel.getmLatitude();
-                double longitude = geoFenceModel.getmLongitude();
-                float radius = geoFenceModel.getmRadius();
-                mRadius = radius;
-                mLatLng = new LatLng(latitude,longitude);
-                setmGeoFenceMarker(mLatLng);
-                drawGeoFence();
-                startGeofence();
+                if(dataSnapshot.exists()) {
+                    double latitude = geoFenceModel.getmLatitude();
+                    double longitude = geoFenceModel.getmLongitude();
+                    float radius = geoFenceModel.getmRadius();
+                    mRadius = radius;
+                    mLatLng = new LatLng(latitude, longitude);
+                    setmGeoFenceMarker(mLatLng);
+                    drawGeoFence();
+                    startGeofence();
+                }
             }
 
             @Override
@@ -358,6 +361,5 @@ public class UserMapActivity extends AppCompatActivity implements OnMapReadyCall
         super.onStart();
         mGoogleApiClient.connect();
     }
-
 
 }
