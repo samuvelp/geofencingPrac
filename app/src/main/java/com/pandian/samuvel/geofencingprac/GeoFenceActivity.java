@@ -21,6 +21,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -44,6 +45,7 @@ import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -51,6 +53,8 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+
+import java.util.ArrayList;
 
 public class GeoFenceActivity extends AppCompatActivity implements OnMapReadyCallback,
         GoogleMap.OnMapClickListener,
@@ -60,6 +64,7 @@ public class GeoFenceActivity extends AppCompatActivity implements OnMapReadyCal
     private MapFragment mMapFragment;
     private Button mAddgeofenceButton;
     private Button mClearGeofenceButton;
+    private EditText mRadiusEditText;
     private GoogleMap mGoogleMap;
     private GoogleApiClient mGoogleApiClient;
     private Location mLastLocation;
@@ -68,6 +73,7 @@ public class GeoFenceActivity extends AppCompatActivity implements OnMapReadyCal
     private Marker mGeoFenceMarker;
     private PendingIntent mGeofencePendingIntent;
     private Circle mGeofenceLimits;
+    private Polygon mPolygonLimits;
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mDatabaseReference;
     private ChildEventListener mChildEventListener;
@@ -82,6 +88,8 @@ public class GeoFenceActivity extends AppCompatActivity implements OnMapReadyCal
     private final String KEY_GEOFENCE_RADIUS = "GEOFENCE_RADIUS";
     private final int REQ_CODE = 1;
 
+    ArrayList<LatLng> polygonList = new ArrayList<>();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -91,6 +99,7 @@ public class GeoFenceActivity extends AppCompatActivity implements OnMapReadyCal
         mMapFragment.getMapAsync(this);
         mAddgeofenceButton = (Button) findViewById(R.id.addGeofence);
         mClearGeofenceButton = (Button) findViewById(R.id.clearGeofenceButton);
+        mRadiusEditText = (EditText) findViewById(R.id.radiusEditText);
 
         mFirebaseDatabase = FirebaseDatabase.getInstance();
         mDatabaseReference = mFirebaseDatabase.getReference().child("geofence");
@@ -105,6 +114,9 @@ public class GeoFenceActivity extends AppCompatActivity implements OnMapReadyCal
                 if(mGeoFenceMarker !=null) {
                     //startGeofence();
                     drawGeoFence();
+                    //drawPolygonGeoFence();
+
+                    mGeoFenceRadius = Float.parseFloat(mRadiusEditText.getText().toString());
                     saveGeofence();
                 }
                 else Toast.makeText(getApplicationContext(),"Please select the geofencing location on map!",Toast.LENGTH_SHORT).show();
@@ -114,8 +126,8 @@ public class GeoFenceActivity extends AppCompatActivity implements OnMapReadyCal
             @Override
             public void onClick(View view) {
                 if(mGeoFenceMarker!=null) {
-                   // mGeoFenceMarker.remove();
-                   // mGeoFenceMarker = null;
+                    mGeoFenceMarker.remove();
+                    mGeoFenceMarker = null;
                     removeGeofenceDraw();
                     removeGeofence();
                 }
@@ -137,7 +149,7 @@ public class GeoFenceActivity extends AppCompatActivity implements OnMapReadyCal
     @Override
     public void onMapClick(LatLng latLng) {
         setmGeoFenceMarker(latLng);
-
+        polygonList.add(latLng);
     }
 
     @Override
@@ -240,7 +252,14 @@ public class GeoFenceActivity extends AppCompatActivity implements OnMapReadyCal
             mGeoFenceMarker = mGoogleMap.addMarker(markerOptions);
         }
     }
-
+    private void drawPolygonGeoFence(){
+        PolygonOptions polygonOptions = new PolygonOptions()
+                .addAll(polygonList)
+                .strokeColor(Color.argb(50,70,70,70))
+                .strokeColor(Color.argb(50, 70, 70, 70))
+                .fillColor(Color.argb(100, 150, 150, 150));
+        mPolygonLimits = mGoogleMap.addPolygon(polygonOptions);
+    }
     private void drawGeoFence(){
         if ( mGeofenceLimits != null )
             mGeofenceLimits.remove();
@@ -303,77 +322,18 @@ public class GeoFenceActivity extends AppCompatActivity implements OnMapReadyCal
             Toast.makeText(getApplicationContext(),"Geofence added!",Toast.LENGTH_SHORT).show();
         }
     }*/
-    /*private void saveGeofence() {
-        //SharedPreferences sharedPreferences = getPreferences( Context.MODE_PRIVATE );
-       /* SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        SharedPreferences.Editor editor = sharedPreferences.edit();
 
-        editor.putLong(KEY_GEOFENCE_LAT, Double.doubleToRawLongBits(mGeoFenceMarker.getPosition().latitude));
-        editor.putLong(KEY_GEOFENCE_LON, Double.doubleToRawLongBits(mGeoFenceMarker.getPosition().longitude));
-        editor.putFloat(KEY_GEOFENCE_RADIUS, mGeoFenceRadius);
-        editor.apply();
-
-    }*/
      private void saveGeofence() {
-
         writeGeofence(mGeoFenceMarker.getPosition(),mGeoFenceRadius);
-    }
+     }
 
-    /*private void recoverGeofenceMarker() {
-       // SharedPreferences sharedPref = getPreferences( Context.MODE_PRIVATE );
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        if (sharedPreferences.contains( KEY_GEOFENCE_LAT ) && sharedPreferences.contains( KEY_GEOFENCE_LON )) {
-            double lat = Double.longBitsToDouble( sharedPreferences.getLong( KEY_GEOFENCE_LAT, -1 ));
-            double lon = Double.longBitsToDouble( sharedPreferences.getLong( KEY_GEOFENCE_LON, -1 ));
-            LatLng latLng = new LatLng( lat, lon );
-            setmGeoFenceMarker(latLng);
-            drawGeoFence();
 
-        }
-    }*/
     private void recoverGeofenceMarker() {
        //attachChildListener();
         attachValueEventListener();
     }
 
-    private void attachChildListener(){
-        if(mChildEventListener ==null){
-            mChildEventListener = new ChildEventListener() {
-                @Override
-                public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-                    GeoFenceModel geoFenceModel = dataSnapshot.getValue(GeoFenceModel.class);
-                    double latitude = geoFenceModel.getmLatitude();
-                    double longitude = geoFenceModel.getmLongitude();
-                    float radius = geoFenceModel.getmRadius();
-                    mGeoFenceRadius = radius;
-                    LatLng latLng = new LatLng(latitude,longitude);
-                    setmGeoFenceMarker(latLng);
-                    drawGeoFence();
-                }
 
-                @Override
-                public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-
-                }
-
-                @Override
-                public void onChildRemoved(DataSnapshot dataSnapshot) {
-
-                }
-
-                @Override
-                public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-
-                }
-
-                @Override
-                public void onCancelled(DatabaseError databaseError) {
-
-                }
-            };
-            mDatabaseReference.addChildEventListener(mChildEventListener);
-        }
-    }
     private void attachValueEventListener(){
         ValueEventListener valueEventListener = new ValueEventListener() {
             @Override
@@ -388,6 +348,7 @@ public class GeoFenceActivity extends AppCompatActivity implements OnMapReadyCal
                     LatLng latLng = new LatLng(latitude, longitude);
                     setmGeoFenceMarker(latLng);
                     drawGeoFence();
+                    //drawPolygonGeoFence();
                 }
             }
 

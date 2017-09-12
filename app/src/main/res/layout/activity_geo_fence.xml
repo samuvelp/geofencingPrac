@@ -18,15 +18,41 @@
         android:layout_weight="1"
         android:layout_gravity="center"
         android:orientation="horizontal">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/radius"
+            android:textSize="12dp"
+            android:textColor="#000000"
+            android:layout_gravity="center"/>
+        <EditText
+            android:id="@+id/radiusEditText"
+            android:layout_width="60dp"
+            android:layout_height="wrap_content"
+            android:hint="500"
+            android:textSize="16sp"
+            android:text="500"
+            android:layout_gravity="center"
+            android:inputType="number"
+            />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="m"
+            android:textColor="#000000"
+            android:textSize="16sp"
+            android:layout_gravity="center"/>
         <Button
             android:id="@+id/addGeofence"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/add_geofence" />
+            android:text="@string/add_geofence"
+            android:textSize="11sp"/>
         <Button
             android:id="@+id/clearGeofenceButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/clear_geofence"/>
+            android:text="@string/clear_geofence"
+            android:textSize="11sp"/>
     </LinearLayout>
 </LinearLayout>

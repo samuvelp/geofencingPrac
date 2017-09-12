@@ -1,9 +1,11 @@
 <resources>
     <string name="app_name">GeoFencing</string>
+    <string name="add">Add</string>
     <string name="add_geofence">Add Geofence</string>
     <string name="user_map">User Map</string>
-    <string name="clear_geofence">clear geofence</string>
+    <string name="clear_geofence">clear</string>
     <string name="location_not_enabled">Location not enabled!</string>
     <string name="open_location_setting">Open location setting</string>
     <string name="cancel">Cancel</string>
+    <string name="radius">radius=</string>
 </resources>
