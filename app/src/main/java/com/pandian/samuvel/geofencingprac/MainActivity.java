@@ -10,8 +10,8 @@ import android.view.View;
 import android.widget.Button;
 
 public class MainActivity extends AppCompatActivity {
-    private Button mGeoFenceButton;
-    private Button mUserMapButton;
+    private Button geofencebutton;
+    private Button usermapButton;
     private static String NOTIFICATION_MSG = "NOTIFICATION_MSG";
 
     public static Intent makeNotificationIntent(Context context, String message) {
@@ -24,17 +24,17 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ActivityCompat.requestPermissions(MainActivity.this,new String[]{Manifest.permission.ACCESS_FINE_LOCATION},1);
-        mGeoFenceButton = findViewById(R.id.addGeofenceButton);
-        mUserMapButton =  findViewById(R.id.userMapButton);
+        geofencebutton = findViewById(R.id.addGeofenceButton);
+        usermapButton =  findViewById(R.id.userMapButton);
 
-        mGeoFenceButton.setOnClickListener(new View.OnClickListener() {
+        geofencebutton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(MainActivity.this,GeoFenceActivity.class);
                 startActivity(intent);
             }
         });
-        mUserMapButton.setOnClickListener(new View.OnClickListener() {
+        usermapButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(MainActivity.this,UserMapActivity.class);
